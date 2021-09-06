@@ -1,0 +1,23 @@
+{
+  "name": "space-war",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "live-server public --port=3002"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jorger/Space-war.git"
+  },
+  "author": "Jorge Rubiano",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Jorger/Space-war/issues"
+  },
+  "homepage": "https://github.com/Jorger/Space-war#readme",
+  "dependencies": {
+    "live-server": "^1.2.1"
+  }
+}
