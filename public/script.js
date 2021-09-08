@@ -35,7 +35,7 @@
   $("html").style.cssText += `--h: ${BASE_HEIGHT}px; --w: ${BASE_WIDTH}px`;
   const setHtml = (element, html) => (element.innerHTML = html);
   const ObjectKeys = (obj) => Object.keys(obj);
-
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const randomNumber = (min, max) =>
     Math.floor(Math.random() * (max - min + 1)) + min;
 
@@ -180,7 +180,7 @@
       }
     };
 
-    const shootLaser = (ship = 1) => {
+    const shootLaser = async (ship = 1) => {
       const laser = $("#laser");
       const particle = $("#particle");
       const positionLaser = [260, 140];
@@ -214,100 +214,55 @@
         opacity: 0,
       });
 
-      setTimeout(() => {
-        console.log("PRIMERO");
-        addStyle(laser, {
-          top: `${positionLaser[ship - 1]}px`,
+      await delay(100);
+
+      console.log("PRIMERO");
+      addStyle(laser, {
+        top: `${positionLaser[ship - 1]}px`,
+        opacity: 1,
+      });
+
+      await delay(200);
+
+      console.log("SEGUNDO");
+      addStyle(laser, {
+        visibility: "hidden",
+      });
+
+      for (let i = 0; i < 4; i++) {
+        const element = $(`#b-${i + 1}`);
+        addStyle(element, {
+          left: `${
+            +element.style.left.split("px")[0] + destinityParticle[i][0] * 100
+          }px`,
+          top: `${
+            +element.style.top.split("px")[0] + destinityParticle[i][1] * 100
+          }px`,
+          visibility: "visible",
           opacity: 1,
         });
-      }, 100);
+      }
 
-      setTimeout(() => {
-        console.log("SEGUNDO");
-        addStyle(laser, {
-          visibility: "hidden",
-        });
+      await delay(400);
 
-        // Se dede mostrar las partículas...
-        for (let i = 0; i < 4; i++) {
-          const element = $(`#b-${i + 1}`);
-          addStyle(element, {
-            left: `${
-              +element.style.left.split("px")[0] + destinityParticle[i][0] * 100
-            }px`,
-            top: `${
-              +element.style.top.split("px")[0] + destinityParticle[i][1] * 100
-            }px`,
-            visibility: "visible",
-            opacity: 1,
-          });
-        }
-      }, 200);
+      console.log("TERCERO");
+      addStyle(particle, {
+        visibility: "hidden",
+      });
 
-      setTimeout(() => {
-        console.log("TERCERO");
-        addStyle(particle, {
-          visibility: "hidden",
-        });
+      setPositionParticle({
+        top: "7px",
+        left: "15px",
+        visibility: "hidden",
+      });
 
-        setPositionParticle({
-          top: "7px",
-          left: "15px",
-          visibility: "hidden",
-        });
-        // Se genera otro patrón...
-
-        if (ship === 2) {
-          console.log("genera un nuevo patrón");
-          setSoundPattern();
-        } else {
-          console.log("HA PERDIDO!!");
-        }
-      }, 400);
-
-      // onRest(laser, (e) => {
-      //   if (e.target.id === "laser" && e.propertyName === "top") {
-      //     console.log("ES UN LASER");
-      //     console.log(e);
-      //     addStyle(laser, {
-      //       visibility: "hidden",
-      //     });
-
-      //     // Se dede mostrar las partículas...
-      //     for (let i = 0; i < 4; i++) {
-      //       const element = $(`#b-${i + 1}`);
-      //       addStyle(element, {
-      //         left: `${
-      //           +element.style.left.split("px")[0] +
-      //           destinityParticle[i][0] * 100
-      //         }px`,
-      //         top: `${
-      //           +element.style.top.split("px")[0] +
-      //           destinityParticle[i][1] * 100
-      //         }px`,
-      //         visibility: "visible",
-      //         opacity: 0,
-      //       });
-      //     }
-      //     setTimeout(() => {
-      //       addStyle(particle, {
-      //         visibility: "hidden",
-      //       });
-      //       // Se genera otro patrón...
-      //       console.log("genera un nuevo patrón");
-      //       setSoundPattern();
-      //       // console.log("SE QUEDA ACÁ?");
-      //     }, 100);
-      //   }
-      // });
-      // Primero se ubica en el punto de origen
-
-      // onRest
-
-      // nave 2 del usuario es:
-      // top: 260px
-      // Para la nave 1 que e sla máquina
-      // top : 140px
+      // Se genera otro patrón...
+      if (ship === 2) {
+        console.log("genera un nuevo patrón");
+        setSoundPattern();
+      } else {
+        console.log("HA PERDIDO!!");
+      }
     };
 
     /** Habila/deshabilita los botones */
@@ -320,14 +275,12 @@
      * @param {*} color
      */
     const executeButtonSound = (color = "") => {
-      ObjectKeys(COLORS).forEach((v) => {
+      ObjectKeys(COLORS).forEach(async (v) => {
         const element = $(`piano #${v}`);
         if (color === v) {
           addClass(element, "active");
-
-          setTimeout(() => {
-            removeClass(element, "active");
-          }, 100);
+          await delay(100);
+          removeClass(element, "active");
         } else {
           removeClass(element, "active");
         }
@@ -371,27 +324,25 @@
      * Función que revisa si el color seleccionado es el válido
      * @param {*} color
      */
-    const checkSoundPattern = (color = "") => {
+    const checkSoundPattern = async (color = "") => {
       // Reproduce el sonido
       zzfx(...COLORS[color][3]);
       changeButtonsState(true);
-
+      await delay(200);
       // Verificar si el sonido/color seleccionado es el válido...
-      setTimeout(() => {
-        if (color === soundPattern[counterPattern]) {
-          counterPattern++;
-          if (counterPattern < soundPattern.length) {
-            changeButtonsState(false);
-          } else {
-            shootLaser(2);
-            console.log("SE HARÍA EL DISPARO DE LA NAVE");
-            score++;
-            setHtml($("#score"), score);
-          }
+      if (color === soundPattern[counterPattern]) {
+        counterPattern++;
+        if (counterPattern < soundPattern.length) {
+          changeButtonsState(false);
         } else {
-          shootLaser(1);
+          shootLaser(2);
+          console.log("SE HARÍA EL DISPARO DE LA NAVE");
+          score++;
+          setHtml($("#score"), score);
         }
-      }, 200);
+      } else {
+        shootLaser(1);
+      }
     };
 
     setHtml(
