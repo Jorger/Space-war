@@ -5,9 +5,39 @@
   const $$ = document.querySelectorAll.bind(document);
   const BASE_HEIGHT = 732;
   const BASE_WIDTH = 412;
+  const COLORS = {
+    red: [
+      "#ff5174",
+      "#ff4a69",
+      "#ee9cac",
+      [, , 1675, , 0.06, 0.24, 1, 1.82, , , 837, 0.06],
+    ],
+    yellow: [
+      "#ffe901",
+      "#fed702",
+      "#fff483",
+      [, , 539, 0, 0.04, 0.29, 1, 1.92, , , 567, 0.02, 0.02, , , , 0.04],
+    ],
+    green: [
+      "#48d054",
+      "#43c04e",
+      "#8ff498",
+      [, , 1e3, , , 0.5, , , , , 99, 0.01, 0.03],
+    ],
+    blue: [
+      "#009afe",
+      "#018fff",
+      "#6abcf2",
+      [, 0.1, 75, 0.03, 0.08, 0.17, 1, 1.88, 7.83, , , , , 0.4],
+    ],
+  };
+
   $("html").style.cssText += `--h: ${BASE_HEIGHT}px; --w: ${BASE_WIDTH}px`;
   const setHtml = (element, html) => (element.innerHTML = html);
   const ObjectKeys = (obj) => Object.keys(obj);
+
+  const randomNumber = (min, max) =>
+    Math.floor(Math.random() * (max - min + 1)) + min;
 
   /**
    * Para edicioar eventos
@@ -28,8 +58,9 @@
    * @param {*} callback
    * @returns
    */
+
   const onRest = (target, callback) =>
-    $on(target, "transitionend", (evt) => callback(evt.propertyName));
+    $on(target, "transitionend", (evt) => callback(evt));
 
   const addClass = (target, className) => {
     if (target) {
@@ -39,13 +70,13 @@
     }
   };
 
-  // const removeClass = (target, className) => {
-  //   if (target) {
-  //     className.split(' ').forEach((classText) => {
-  //       target.classList.remove(classText);
-  //     });
-  //   }
-  // };
+  const removeClass = (target, className) => {
+    if (target) {
+      className.split(" ").forEach((classText) => {
+        target.classList.remove(classText);
+      });
+    }
+  };
 
   /**
    * Eliminar un evento
@@ -122,24 +153,265 @@
   const Ship = (number = 1, styles = {}) =>
     `<div class=s${number} ${inlineStyles(styles)}></div>`;
 
-  const PianoKey = (color = "") =>
-    `<button id=p-${color} class="pkey ${color}"></button>`;
-
   const Piano = () =>
     `<piano class="cs" ${inlineStyles({
       "flex-wrap": "wrap",
       width: "80%",
-    })}>${["red", "yellow", "green", "blue"]
-      .map((v) => PianoKey(v))
+    })}>${ObjectKeys(COLORS)
+      .map((v) => `<button disabled id=${v}></button>`)
       .join("")}</piano>`;
 
   const PauseButton = () => `<button id=pause>⏸️</button>`;
 
+  const Bullets = (id = "", styles = {}) =>
+    `<div class=bullet id=${id} ${inlineStyles(styles)}></div>`;
+
   const Game = () => {
+    // const SHOOTING_POINTS =
+
+    let soundPattern = [];
+    let intervalPattern;
+    let counterPattern = 0;
+    let score = 0;
+
+    const setPositionParticle = (styles) => {
+      for (let i = 0; i < 4; i++) {
+        addStyle($(`#b-${i + 1}`), styles);
+      }
+    };
+
+    const shootLaser = (ship = 1) => {
+      const laser = $("#laser");
+      const particle = $("#particle");
+      const positionLaser = [260, 140];
+      const positionParticle = ["43%", "13%"];
+      const initialPosition = positionLaser[ship === 1 ? 1 : 0];
+      const destinityParticle = [
+        [1, -1],
+        [1, 1],
+        [-1, 1],
+        [-1, -1],
+      ];
+
+      addStyle(particle, {
+        top: positionParticle[ship - 1],
+        visibility: "visible",
+      });
+
+      setPositionParticle({
+        top: "7px",
+        left: "15px",
+        visibility: "hidden",
+        opacity: 0,
+      });
+
+      // 45deg 135deg 225deg, 315deg
+
+      addStyle(laser, {
+        left: "49%",
+        top: `${initialPosition}px`,
+        visibility: "visible",
+        opacity: 0,
+      });
+
+      setTimeout(() => {
+        console.log("PRIMERO");
+        addStyle(laser, {
+          top: `${positionLaser[ship - 1]}px`,
+          opacity: 1,
+        });
+      }, 100);
+
+      setTimeout(() => {
+        console.log("SEGUNDO");
+        addStyle(laser, {
+          visibility: "hidden",
+        });
+
+        // Se dede mostrar las partículas...
+        for (let i = 0; i < 4; i++) {
+          const element = $(`#b-${i + 1}`);
+          addStyle(element, {
+            left: `${
+              +element.style.left.split("px")[0] + destinityParticle[i][0] * 100
+            }px`,
+            top: `${
+              +element.style.top.split("px")[0] + destinityParticle[i][1] * 100
+            }px`,
+            visibility: "visible",
+            opacity: 1,
+          });
+        }
+      }, 200);
+
+      setTimeout(() => {
+        console.log("TERCERO");
+        addStyle(particle, {
+          visibility: "hidden",
+        });
+
+        setPositionParticle({
+          top: "7px",
+          left: "15px",
+          visibility: "hidden",
+        });
+        // Se genera otro patrón...
+
+        if (ship === 2) {
+          console.log("genera un nuevo patrón");
+          setSoundPattern();
+        } else {
+          console.log("HA PERDIDO!!");
+        }
+      }, 400);
+
+      // onRest(laser, (e) => {
+      //   if (e.target.id === "laser" && e.propertyName === "top") {
+      //     console.log("ES UN LASER");
+      //     console.log(e);
+      //     addStyle(laser, {
+      //       visibility: "hidden",
+      //     });
+
+      //     // Se dede mostrar las partículas...
+      //     for (let i = 0; i < 4; i++) {
+      //       const element = $(`#b-${i + 1}`);
+      //       addStyle(element, {
+      //         left: `${
+      //           +element.style.left.split("px")[0] +
+      //           destinityParticle[i][0] * 100
+      //         }px`,
+      //         top: `${
+      //           +element.style.top.split("px")[0] +
+      //           destinityParticle[i][1] * 100
+      //         }px`,
+      //         visibility: "visible",
+      //         opacity: 0,
+      //       });
+      //     }
+      //     setTimeout(() => {
+      //       addStyle(particle, {
+      //         visibility: "hidden",
+      //       });
+      //       // Se genera otro patrón...
+      //       console.log("genera un nuevo patrón");
+      //       setSoundPattern();
+      //       // console.log("SE QUEDA ACÁ?");
+      //     }, 100);
+      //   }
+      // });
+      // Primero se ubica en el punto de origen
+
+      // onRest
+
+      // nave 2 del usuario es:
+      // top: 260px
+      // Para la nave 1 que e sla máquina
+      // top : 140px
+    };
+
+    /** Habila/deshabilita los botones */
+    const changeButtonsState = (disabled = false) => {
+      ObjectKeys(COLORS).forEach((v) => ($(`piano #${v}`).disabled = disabled));
+    };
+
+    /**
+     * Función que ejecuta y muetra el sonido
+     * @param {*} color
+     */
+    const executeButtonSound = (color = "") => {
+      ObjectKeys(COLORS).forEach((v) => {
+        const element = $(`piano #${v}`);
+        if (color === v) {
+          addClass(element, "active");
+
+          setTimeout(() => {
+            removeClass(element, "active");
+          }, 100);
+        } else {
+          removeClass(element, "active");
+        }
+      });
+
+      if (color !== "") {
+        zzfx(...COLORS[color][3]);
+      }
+    };
+
+    /**
+     * Función que genera un nuevo patrón de sonido
+     */
+    const setSoundPattern = () => {
+      let index = 0;
+      let counter = 0;
+      soundPattern.push(ObjectKeys(COLORS)[randomNumber(0, 3)]);
+      console.log(soundPattern);
+
+      if (intervalPattern) {
+        clearInterval(intervalPattern);
+      }
+
+      intervalPattern = setInterval(() => {
+        if (index >= soundPattern.length) {
+          counterPattern = 0;
+          clearInterval(intervalPattern);
+          changeButtonsState(false);
+        }
+
+        if (counter % 2 === 0) {
+          executeButtonSound(soundPattern[index]);
+          index++;
+        }
+
+        counter++;
+      }, 200);
+    };
+
+    /**
+     * Función que revisa si el color seleccionado es el válido
+     * @param {*} color
+     */
+    const checkSoundPattern = (color = "") => {
+      // Reproduce el sonido
+      zzfx(...COLORS[color][3]);
+      changeButtonsState(true);
+
+      // Verificar si el sonido/color seleccionado es el válido...
+      setTimeout(() => {
+        if (color === soundPattern[counterPattern]) {
+          counterPattern++;
+          if (counterPattern < soundPattern.length) {
+            changeButtonsState(false);
+          } else {
+            shootLaser(2);
+            console.log("SE HARÍA EL DISPARO DE LA NAVE");
+            score++;
+            setHtml($("#score"), score);
+          }
+        } else {
+          shootLaser(1);
+        }
+      }, 200);
+    };
+
     setHtml(
       $("#root"),
       `<div class="cs wh" ${inlineStyles({ "flex-direction": "column" })}>
       ${PauseButton()}
+      ${Bullets("laser")}
+      <div id=particle>
+      ${new Array(4)
+        .fill(null)
+        .map((_, i) =>
+          Bullets(`b-${i + 1}`, {
+            background: "#f5f301",
+            height: "25px",
+            transform: `rotate(${45 + 90 * i}deg)`,
+          })
+        )
+        .join("")}
+      </div>
+      <div id=score>0</div>
       ${new Array(2)
         .fill(null)
         .map((_, i) =>
@@ -156,13 +428,12 @@
     );
 
     $$("piano button").forEach((btn) =>
-      $on(btn, "click", (e) => {
-        const color = e.target.id.split("-")[1];
-        console.log({ color });
-      })
+      $on(btn, "click", (e) => checkSoundPattern(e.target.id))
     );
 
     $on($("#pause"), "click", () => Screen());
+
+    setSoundPattern();
   };
 
   const Lobby = () => {
@@ -185,6 +456,45 @@
 
     Handler[screen]();
   };
+
+  const customClass = `piano button {
+    height: calc(var(--w) * 0.22);
+    width: calc(var(--w) * 0.3);
+    border: none;
+    cursor: pointer;
+    margin: 5%;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: ${new Array(7)
+      .fill(null)
+      .map(
+        (_, i) =>
+          `var(--shadow) ${-2 * (i + 1)}px ${-2 * (i + 1)}px ${
+            2 * (i + 1)
+          }px 0px`
+      )
+      .join(",")};
+  }
+  ${ObjectKeys(COLORS)
+    .map(
+      (v) => `
+    piano button#${v} {
+      background: ${COLORS[v][0]};
+      border-bottom: 10px solid ${COLORS[v][1]};
+    }
+
+    piano button#${v}:active, 
+    piano button#${v}.active {
+      border-bottom: 0;
+      background : ${COLORS[v][2]};
+      transform: translateY(4px);
+    }
+  `
+    )
+    .join("")}`;
+
+  const style = document.createElement("style");
+  setHtml(style, customClass);
+  $("head").appendChild(style);
 
   Screen("Game");
 
