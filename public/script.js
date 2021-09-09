@@ -5,6 +5,7 @@
   const $$ = document.querySelectorAll.bind(document);
   const BASE_HEIGHT = 732;
   const BASE_WIDTH = 412;
+  const CACHE_KEY = "space-war-js13k";
   const COLORS = {
     red: [
       "#ff5174",
@@ -32,12 +33,41 @@
     ],
   };
 
+  const SOUNDS = {
+    explosion: [, , 418, 0, 0.02, 0.2, 4, 1.15, -8.5, , , , , 0.7, , 0.1],
+    kill: [
+      2.06,
+      ,
+      437,
+      ,
+      0.19,
+      1,
+      2,
+      1.19,
+      0.9,
+      0.9,
+      ,
+      ,
+      ,
+      0.5,
+      ,
+      0.4,
+      0.34,
+      0.69,
+      0.06,
+      0.22,
+    ],
+  };
+
   $("html").style.cssText += `--h: ${BASE_HEIGHT}px; --w: ${BASE_WIDTH}px`;
   const setHtml = (element, html) => (element.innerHTML = html);
   const ObjectKeys = (obj) => Object.keys(obj);
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const randomNumber = (min, max) =>
     Math.floor(Math.random() * (max - min + 1)) + min;
+
+  const generateLink = (label = "", url = "") =>
+    `<a title=${label} href=${url} target="_blank" rel="noopener noreferrer">${label}</a>`;
 
   /**
    * Para edicioar eventos
@@ -53,15 +83,10 @@
   };
 
   /**
-   * Función que detcta cuando un evento de tipo transitionend termina
+   * Agregar una clase a un elemento
    * @param {*} target
-   * @param {*} callback
-   * @returns
+   * @param {*} className
    */
-
-  const onRest = (target, callback) =>
-    $on(target, "transitionend", (evt) => callback(evt));
-
   const addClass = (target, className) => {
     if (target) {
       className.split(" ").forEach((classText) => {
@@ -70,6 +95,11 @@
     }
   };
 
+  /**
+   * Eliminar la clase de un elemento
+   * @param {*} target
+   * @param {*} className
+   */
   const removeClass = (target, className) => {
     if (target) {
       className.split(" ").forEach((classText) => {
@@ -79,17 +109,39 @@
   };
 
   /**
-   * Eliminar un evento
-   * @param {*} target
-   * @param {*} type
-   * @param {*} callback
-   * @param {*} parameter
+   * Guadar la información dada en localStorage/sessionStorage
+   * @param {*} data
    */
-  // const $off = (target, type, callback, parameter = {}) => {
-  //   if (target) {
-  //     target.removeEventListener(type, callback, parameter);
-  //   }
-  // };
+  const saveCache = (data) => {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  };
+
+  /**
+   * Obtener la data que está guardarda en localStorage
+   */
+  const getDataCache = () => {
+    const data = localStorage.getItem(CACHE_KEY) || "";
+    return data !== "" ? JSON.parse(data) : {};
+  };
+
+  /**
+   * Guarda valores de una propiedad en localstorage
+   * @param {*} property
+   * @param {*} value
+   */
+  const savePropierties = (property, value) => {
+    const localCache = getDataCache();
+    localCache[property] = value;
+    saveCache(localCache);
+  };
+
+  /**
+   * Dada una propiedad, devuelve la información de la misma
+   */
+  const getValueFromCache = (key = "", initial) => {
+    const localCache = getDataCache();
+    return localCache[key] || initial;
+  };
 
   /**
    * Determina si el dispotivo es mobile
@@ -150,6 +202,48 @@
   }, 100);
   // fin de utilidades
 
+  const Modal = {
+    show({ txt, icon = "", yes = "yes", no = "no", cb, timer = 0 }) {
+      $("modal .txt").innerHTML =
+        (icon
+          ? `<p ${inlineStyles({ "font-size": "3rem" })}>${icon}</p>`
+          : "") + txt;
+      addStyle($("modal #btn1"), { display: yes ? "block" : "none" });
+      addStyle($("modal #btn2"), { display: no ? "block" : "none" });
+      $("modal #btn1").textContent = yes;
+      $("modal #btn2").textContent = no;
+      removeClass($("modal"), "hide");
+      addClass($("modal"), "show");
+      if (this.interval) {
+        clearTimeout(this.interval);
+      }
+      if (timer) {
+        this.interval = setTimeout(() => {
+          this.hide();
+        }, timer);
+      }
+
+      this.callback = cb;
+    },
+    hide() {
+      removeClass($("modal"), "show");
+      addClass($("modal"), "hide");
+      if (this.interval) {
+        clearTimeout(this.interval);
+      }
+    },
+    render: () =>
+      `<modal class="hide wh"><div class="ms wh"></div><div class="mw wh cs"><div class=mc><div class="wh cs txt"></div><div class="mb wh cs"><button id=btn1></button><button id=btn2></button></div></div></div></modal>`,
+    events() {
+      $$("modal button").forEach((btn) =>
+        $on(btn, "click", (e) => {
+          this.hide();
+          this.callback && this.callback(e.target.id === "btn1");
+        })
+      );
+    },
+  };
+
   const Ship = (number = 1, styles = {}) =>
     `<div class=s${number} ${inlineStyles(styles)}></div>`;
 
@@ -161,24 +255,16 @@
       .map((v) => `<button disabled id=${v}></button>`)
       .join("")}</piano>`;
 
-  const PauseButton = () => `<button id=pause>⏸️</button>`;
+  const PauseButton = (icon = "⏸️") => `<button id=pause>${icon}</button>`;
 
   const Bullets = (id = "", styles = {}) =>
     `<div class=bullet id=${id} ${inlineStyles(styles)}></div>`;
 
   const Game = () => {
-    // const SHOOTING_POINTS =
-
     let soundPattern = [];
     let intervalPattern;
     let counterPattern = 0;
     let score = 0;
-
-    const setPositionParticle = (styles) => {
-      for (let i = 0; i < 4; i++) {
-        addStyle($(`#b-${i + 1}`), styles);
-      }
-    };
 
     const shootLaser = async (ship = 1) => {
       const laser = $("#laser");
@@ -193,79 +279,92 @@
         [-1, -1],
       ];
 
+      addStyle($(".game"), { animation: "unset" });
+
       addStyle(particle, {
         top: positionParticle[ship - 1],
         visibility: "visible",
       });
 
-      setPositionParticle({
-        top: "7px",
-        left: "15px",
-        visibility: "hidden",
-        opacity: 0,
-      });
-
-      // 45deg 135deg 225deg, 315deg
+      for (let i = 0; i < 4; i++) {
+        addStyle($(`#b-${i + 1}`), {
+          top: "7px",
+          left: "15px",
+          visibility: "hidden",
+          opacity: 0,
+          transition: "left .8s ease, top .8s ease, opacity .8s ease",
+          background: "#f5f301",
+          height: "25px",
+          transform: `rotate(${45 + 90 * i}deg)`,
+        });
+      }
 
       addStyle(laser, {
         left: "49%",
         top: `${initialPosition}px`,
         visibility: "visible",
         opacity: 0,
+        transition: "top 0.5s ease, opacity 1s ease",
       });
 
-      await delay(100);
-
-      console.log("PRIMERO");
+      await delay(70);
       addStyle(laser, {
         top: `${positionLaser[ship - 1]}px`,
         opacity: 1,
       });
 
       await delay(200);
-
-      console.log("SEGUNDO");
-      addStyle(laser, {
-        visibility: "hidden",
-      });
+      laser.style = "";
 
       for (let i = 0; i < 4; i++) {
         const element = $(`#b-${i + 1}`);
         addStyle(element, {
           left: `${
-            +element.style.left.split("px")[0] + destinityParticle[i][0] * 100
+            +element.style.left.split("px")[0] + destinityParticle[i][0] * 300
           }px`,
           top: `${
-            +element.style.top.split("px")[0] + destinityParticle[i][1] * 100
+            +element.style.top.split("px")[0] + destinityParticle[i][1] * 300
           }px`,
           visibility: "visible",
           opacity: 1,
         });
       }
 
-      await delay(400);
+      zzfx(...SOUNDS[ship === 2 ? "explosion" : "kill"]);
+      if (ship == 1) {
+        addStyle($(".game"), { animation: "shakeY .5s" });
+        if ("vibrate" in navigator) {
+          navigator.vibrate(500);
+        }
+      }
 
-      console.log("TERCERO");
-      addStyle(particle, {
-        visibility: "hidden",
-      });
+      await delay(500);
+      particle.style = "";
 
-      setPositionParticle({
-        top: "7px",
-        left: "15px",
-        visibility: "hidden",
-      });
+      for (let i = 0; i < 4; i++) {
+        $(`#b-${i + 1}`).style = "";
+      }
 
       // Se genera otro patrón...
       if (ship === 2) {
-        console.log("genera un nuevo patrón");
         setSoundPattern();
       } else {
-        console.log("HA PERDIDO!!");
+        Modal.show({
+          icon: "🚀",
+          txt: `<h2 ${inlineStyles({
+            "margin-bottom": "10px",
+          })}>Destroyed ship.</h2><p><b>You achieved ${score} points</b>, do you want to try again?</p>`,
+          cb(answer) {
+            answer ? restartGame() : Screen();
+          },
+        });
       }
     };
 
-    /** Habila/deshabilita los botones */
+    /**
+     * Habila/deshabilita los botones
+     * @param {*} disabled
+     */
     const changeButtonsState = (disabled = false) => {
       ObjectKeys(COLORS).forEach((v) => ($(`piano #${v}`).disabled = disabled));
     };
@@ -275,20 +374,20 @@
      * @param {*} color
      */
     const executeButtonSound = (color = "") => {
-      ObjectKeys(COLORS).forEach(async (v) => {
-        const element = $(`piano #${v}`);
-        if (color === v) {
-          addClass(element, "active");
-          await delay(100);
-          removeClass(element, "active");
-        } else {
-          removeClass(element, "active");
-        }
-      });
-
       if (color !== "") {
         zzfx(...COLORS[color][3]);
       }
+
+      ObjectKeys(COLORS).forEach(async (v) => {
+        const element = $(`piano #${v}`);
+        if (color === v) {
+          addClass(element, "select");
+          await delay(100);
+          removeClass(element, "select");
+        } else {
+          removeClass(element, "select");
+        }
+      });
     };
 
     /**
@@ -298,7 +397,8 @@
       let index = 0;
       let counter = 0;
       soundPattern.push(ObjectKeys(COLORS)[randomNumber(0, 3)]);
-      console.log(soundPattern);
+      // Se bloquean los botones...
+      changeButtonsState(true);
 
       if (intervalPattern) {
         clearInterval(intervalPattern);
@@ -308,6 +408,7 @@
         if (index >= soundPattern.length) {
           counterPattern = 0;
           clearInterval(intervalPattern);
+          // Se habilitan los bototes...
           changeButtonsState(false);
         }
 
@@ -336,30 +437,36 @@
           changeButtonsState(false);
         } else {
           shootLaser(2);
-          console.log("SE HARÍA EL DISPARO DE LA NAVE");
           score++;
           setHtml($("#score"), score);
+          const currentScore = +getValueFromCache("score", 0);
+          if (score > currentScore) {
+            savePropierties("score", score);
+          }
         }
       } else {
         shootLaser(1);
       }
     };
 
+    const restartGame = async () => {
+      soundPattern = [];
+      counterPattern = 0;
+      score = 0;
+      setHtml($("#score"), score);
+      await delay(200);
+      setSoundPattern();
+    };
+
     setHtml(
-      $("#root"),
-      `<div class="cs wh" ${inlineStyles({ "flex-direction": "column" })}>
+      $("#render"),
+      `<div class="game cs wh" ${inlineStyles({ "flex-direction": "column" })}>
       ${PauseButton()}
       ${Bullets("laser")}
       <div id=particle>
       ${new Array(4)
         .fill(null)
-        .map((_, i) =>
-          Bullets(`b-${i + 1}`, {
-            background: "#f5f301",
-            height: "25px",
-            transform: `rotate(${45 + 90 * i}deg)`,
-          })
-        )
+        .map((_, i) => Bullets(`b-${i + 1}`))
         .join("")}
       </div>
       <div id=score>0</div>
@@ -382,27 +489,103 @@
       $on(btn, "click", (e) => checkSoundPattern(e.target.id))
     );
 
-    $on($("#pause"), "click", () => Screen());
+    $on($("#pause"), "click", () => {
+      if (intervalPattern) {
+        clearInterval(intervalPattern);
+      }
+
+      Screen();
+    });
 
     setSoundPattern();
   };
 
   const Lobby = () => {
     setHtml(
-      $("#root"),
-      `<div class="cs wh">
-        Pantalla del Lobby
-        <button>GAME</button>
+      $("#render"),
+      `<div class="cs wh" ${inlineStyles({ "flex-direction": "column" })}>
+        ${Ship(1, {
+          width: "100px",
+          height: "100px",
+          filter: "drop-shadow(-14px -13px 3px var(--shadow))",
+          "margin-bottom": "40px",
+          animation: "rotation 10s infinite linear",
+        })}
+        <h1 class=logo ${inlineStyles({
+          "margin-bottom": "10px",
+        })}>Space War</h1>
+        <h2>Best Score</h2>
+        <div ${inlineStyles({
+          "font-size": "40px",
+          "font-weight": "bold",
+        })}>${getValueFromCache("score", 0)}</div>
+        <p class=copy>
+          Press the right button to attack the enemy ship or your ship will be destroyed
+        </p>
+        <button class=button id=game>START GAME</button>
+        <a href=# id=about ${inlineStyles({
+          color: "white",
+          "z-index": 2,
+          "font-size": "25px",
+          "margin-top": "40px",
+        })}>About</a>
       </div>`
     );
 
-    $on($("button"), "click", () => Screen("Game"));
+    $on($("#game"), "click", () => Screen("Game"));
+    $on($("#about"), "click", (e) => {
+      e.preventDefault();
+      Screen("About");
+    });
+  };
+
+  const About = () => {
+    setHtml(
+      $("#render"),
+      `<div class="cs wh" ${inlineStyles({ "flex-direction": "column" })}>
+        ${PauseButton("⬅️")}
+        ${Ship(2, {
+          width: "100px",
+          height: "100px",
+          "margin-bottom": "30px",
+        })}
+        <h1 class=logo>Space War</h1>
+        <h3>
+        ${generateLink("By Jorge Rubiano", "https://github.com/Jorger")}
+        </h3>
+        <p class=copy>Space War is a game developed for the 2021 edition of the ${generateLink(
+          "#JS13K",
+          "https://js13kgames.com/"
+        )}</p>
+        <div ${inlineStyles({
+          padding: "15px",
+          width: "80%",
+          "font-size": "20px",
+          "line-height": "1.2",
+          "margin-top": "-15px",
+        })}><ul>${[
+        ["Twitter", "https://twitter.com/ostjh"],
+        ["Github", "https://github.com/Jorger"],
+        ["Linkedin", "https://www.linkedin.com/in/jorge-rubiano-a8616319"],
+      ]
+        .map(
+          (v) =>
+            `<li ${inlineStyles({ "margin-bottom": "5px" })}>${generateLink(
+              v[0],
+              v[1]
+            )}</li>`
+        )
+        .join("")}</ul></div>
+      </div>`
+    );
+    $on($("#pause"), "click", () => Screen());
   };
 
   const Screen = (screen = "Lobby") => {
     const Handler = {
       Lobby,
       Game,
+      About,
     };
 
     Handler[screen]();
@@ -434,7 +617,7 @@
     }
 
     piano button#${v}:active, 
-    piano button#${v}.active {
+    piano button#${v}.select {
       border-bottom: 0;
       background : ${COLORS[v][2]};
       transform: translateY(4px);
@@ -447,8 +630,14 @@
   setHtml(style, customClass);
   $("head").appendChild(style);
 
-  Screen("Game");
+  setHtml($("#root"), `${Modal.render()}<div id="render" class="wh cs">`);
+  Modal.events();
 
+  if (!ObjectKeys(getDataCache()).length) {
+    savePropierties("score", 0);
+  }
+
+  Screen();
   $on(document, "contextmenu", (event) => event.preventDefault());
   $on(window, "resize", onWindowResize);
   onWindowResize();

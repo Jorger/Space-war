@@ -10,6 +10,15 @@
   padding: 0;
 }
 
+a {
+  color: var(--i);
+  font-weight: bold;
+}
+
+a:visited {
+  color: var(--i);
+}
+
 html,
 body {
   background: var(--b);
@@ -44,6 +53,15 @@ div {
   position: relative;
   width: var(--w);
   background: #1e1e26;
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
 }
 
 /* Para la nave uno */
@@ -97,29 +115,174 @@ div {
   font-size: 2.5em;
   font-weight: bold;
   text-shadow: -5px 0px 4px var(--shadow);
-  /* filter: drop-shadow(-14px -13px 3px red); */
 }
 
 .bullet {
   width: 8px;
   height: 40px;
   z-index: 1;
-  /* top: 260px;
-  left: 49%; */
   position: absolute;
   background: #d8829f;
   box-shadow: -7px -7px 6px 0px var(--shadow);
-  transition: left 0.2s ease, top 0.2s ease, opacity 0.2s ease;
-  /* left 0.15s ease, top 0.15s ease; */
   visibility: hidden;
 }
 
 #particle {
-  position: absolute;
-  left: 45%;
-  /* border: 1px solid red; */
-  width: 40px;
   height: 40px;
+  left: 45%;
+  position: absolute;
+  width: 40px;
   z-index: 1;
-  /* visibility: hidden; */
+}
+
+@keyframes shakeY {
+  from,
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translate3d(0, -10px, 0);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translate3d(0, 10px, 0);
+  }
+}
+
+/* Estilos para el modal */
+modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 100;
+}
+
+modal.hide {
+  pointer-events: none;
+  visibility: hidden;
+  transition: visibility 200ms;
+}
+
+modal.show {
+  visibility: visible;
+}
+
+.ms,
+.mw {
+  left: 0;
+  position: absolute;
+  top: 0;
+}
+
+.ms {
+  backdrop-filter: blur(5px);
+  background: #b6b7c742;
+}
+
+.mw {
+  z-index: 1;
+}
+
+.mc {
+  border-radius: 5px;
+  overflow: hidden;
+  width: 71%;
+  background: var(--i);
+  overflow: hidden;
+}
+
+.mc .txt {
+  color: #8f9cb5;
+  padding: 20px;
+  flex-direction: column;
+}
+
+.mb button {
+  width: 100%;
+  border: none;
+  height: 50px;
+  background: #fc7169;
+  cursor: pointer;
+  color: var(--i);
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.mb button:nth-child(2) {
+  background: #b6bece;
+}
+
+modal.show .mc {
+  animation: fD 200ms both;
+}
+
+modal.hide .mc {
+  animation: fUp 200ms both;
+}
+
+@keyframes fD {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -100%, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes fUp {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -100%, 0);
+  }
+}
+
+/* fin estilos del modal */
+
+/* Para el logo */
+.logo {
+  font-size: 50px;
+  font-weight: bold;
+}
+
+.copy {
+  font-size: 20px;
+  line-height: 1.3;
+  margin: 40px 0;
+  text-align: justify;
+  width: 80%;
+}
+
+.button {
+  box-shadow: inset 0px -3px 7px 0px #29bbff;
+  background: linear-gradient(to bottom, #2dabf9 5%, #0688fa 100%);
+  background-color: #2dabf9;
+  border-radius: 3px;
+  border: 1px solid #0b0e07;
+  display: inline-block;
+  cursor: pointer;
+  color: #ffffff;
+  font-family: Arial;
+  font-size: 1.8em;
+  padding: 9px 23px;
+  text-decoration: none;
+  text-shadow: 0px 1px 0px #263666;
+}
+.button:hover {
+  background: linear-gradient(to bottom, #0688fa 5%, #2dabf9 100%);
+  background-color: #0688fa;
+}
+.button:active {
+  position: relative;
+  top: 1px;
 }
