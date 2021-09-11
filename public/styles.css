@@ -173,6 +173,10 @@ modal.show {
   visibility: visible;
 }
 
+modal a {
+  color: var(--b) !important;
+}
+
 .ms,
 .mw {
   left: 0;
@@ -253,6 +257,7 @@ modal.hide .mc {
 .logo {
   font-size: 50px;
   font-weight: bold;
+  animation : lSpeed 1s both;
 }
 
 .copy {
@@ -263,26 +268,49 @@ modal.hide .mc {
   width: 80%;
 }
 
+
 .button {
-  box-shadow: inset 0px -3px 7px 0px #29bbff;
-  background: linear-gradient(to bottom, #2dabf9 5%, #0688fa 100%);
-  background-color: #2dabf9;
-  border-radius: 3px;
-  border: 1px solid #0b0e07;
-  display: inline-block;
+  min-width: 130px;
+  height: 40px;
+  color: #fff;
+  padding: 5px 10px;
+  font-weight: bold;
   cursor: pointer;
-  color: #ffffff;
-  font-family: Arial;
-  font-size: 1.8em;
-  padding: 9px 23px;
-  text-decoration: none;
-  text-shadow: 0px 1px 0px #263666;
+  transition: all 0.3s ease;
+  position: relative;
+  display: inline-block;
+  outline: none;
+  border-radius: 5px;
+  border: none;
+  background: #ef233c;
+  box-shadow: 0 5px #d90429;
+  font-size: 20px;
 }
 .button:hover {
-  background: linear-gradient(to bottom, #0688fa 5%, #2dabf9 100%);
-  background-color: #0688fa;
+  box-shadow: 0 3px #d90429;
+  top: 1px;
 }
 .button:active {
-  position: relative;
-  top: 1px;
+  box-shadow: 0 0 #d90429;
+  top: 5px;
+}
+
+@keyframes rOut {
+  from { opacity: 1; }
+  to { transform: rotate3d(0, 0, 1, 200deg); opacity: 0; }
+}
+
+@keyframes swing {
+  20% { transform: rotate3d(0, 0, 1, 15deg); }
+  40% { transform: rotate3d(0, 0, 1, -10deg); }
+  60% { transform: rotate3d(0, 0, 1, 5deg); }
+  80% { transform: rotate3d(0, 0, 1, -5deg); }
+  to { transform: rotate3d(0, 0, 1, 0deg); }
+}
+
+@keyframes lSpeed {
+  from { transform: translate3d(-100%, 0, 0) skewX(30deg); opacity: 0; }
+  60% { transform: skewX(-20deg); opacity: 1; }
+  80% { transform: skewX(5deg); }
+  to { transform: translate3d(0, 0, 0); }
 }

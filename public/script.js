@@ -6,6 +6,7 @@
   const BASE_HEIGHT = 732;
   const BASE_WIDTH = 412;
   const CACHE_KEY = "space-war-js13k";
+  const supportedShare = "share" in navigator;
   const COLORS = {
     red: [
       "#ff5174",
@@ -200,6 +201,44 @@
         scale >= 1 || mobile ? `scale(${!mobile ? scale : 1})` : undefined,
     });
   }, 100);
+
+  const shareAction = (
+    title = "",
+    text = "",
+    url = "",
+    alternativeText = ""
+  ) => {
+    if (supportedShare) {
+      navigator
+        .share({ title, text, url })
+        .then(() => {
+          Modal.show({
+            icon: "🥰",
+            txt: "<h2>Thanks for sharing</h2>",
+            no: "",
+            yes: "Ok",
+            timer: 2000,
+          });
+        })
+        .catch((err) => {
+          Modal.show({
+            icon: "⚠️",
+            txt: `<h2>Error</h2><p>${err}</p>`,
+            no: "",
+            yes: "Ok",
+            timer: 2000,
+          });
+        });
+    } else {
+      Modal.show({
+        icon: "👍",
+        txt: alternativeText,
+        no: "",
+        yes: "Close",
+      });
+    }
+  };
+
   // fin de utilidades
 
   const Modal = {
@@ -332,10 +371,13 @@
 
       zzfx(...SOUNDS[ship === 2 ? "explosion" : "kill"]);
       if (ship == 1) {
-        addStyle($(".game"), { animation: "shakeY .5s" });
+        addStyle($(".game"), { animation: "shakeY .5s" });        
+        addStyle($(".s2"), {animation : "rOut .5s both"})
         if ("vibrate" in navigator) {
           navigator.vibrate(500);
         }
+      } else {
+        addStyle($(".s1"), { animation : "swing .5s both" });
       }
 
       await delay(500);
@@ -348,7 +390,9 @@
       // Se genera otro patrón...
       if (ship === 2) {
         setSoundPattern();
+        addStyle($(".s1"), { animation : "unset" });
       } else {
+        await delay(500);
         Modal.show({
           icon: "🚀",
           txt: `<h2 ${inlineStyles({
@@ -393,12 +437,16 @@
     /**
      * Función que genera un nuevo patrón de sonido
      */
-    const setSoundPattern = () => {
+    const setSoundPattern = async (start = false) => {
       let index = 0;
       let counter = 0;
       soundPattern.push(ObjectKeys(COLORS)[randomNumber(0, 3)]);
       // Se bloquean los botones...
       changeButtonsState(true);
+
+      if(start) {
+        await delay(500);
+      }
 
       if (intervalPattern) {
         clearInterval(intervalPattern);
@@ -453,9 +501,10 @@
       soundPattern = [];
       counterPattern = 0;
       score = 0;
+      addStyle($(".s2"), {animation : "up 400ms both"})
       setHtml($("#score"), score);
       await delay(200);
-      setSoundPattern();
+      setSoundPattern(true);
     };
 
     setHtml(
@@ -478,6 +527,7 @@
             height: "60px",
             filter: "drop-shadow(-14px -13px 3px var(--shadow))",
             "margin-bottom": i ? "30px" : "150px",
+            "animation": `${i ? "up" : "down"} 400ms both`
           })
         )
         .join("")}
@@ -497,7 +547,7 @@
       Screen();
     });
 
-    setSoundPattern();
+    setSoundPattern(true);
   };
 
   const Lobby = () => {
@@ -505,8 +555,8 @@
       $("#render"),
       `<div class="cs wh" ${inlineStyles({ "flex-direction": "column" })}>
         ${Ship(1, {
-          width: "100px",
-          height: "100px",
+          width: "95px",
+          height: "95px",
           filter: "drop-shadow(-14px -13px 3px var(--shadow))",
           "margin-bottom": "40px",
           animation: "rotation 10s infinite linear",
@@ -516,13 +566,14 @@
         })}>Space War</h1>
         <h2>Best Score</h2>
         <div ${inlineStyles({
-          "font-size": "40px",
+          "font-size": "60px",
           "font-weight": "bold",
         })}>${getValueFromCache("score", 0)}</div>
+        <button class=button id=share>Share</button>
         <p class=copy>
           Press the right button to attack the enemy ship or your ship will be destroyed
         </p>
-        <button class=button id=game>START GAME</button>
+        <button class=button id=game>START</button>
         <a href=# id=about ${inlineStyles({
           color: "white",
           "z-index": 2,
@@ -531,6 +582,16 @@
         })}>About</a>
       </div>`
     );
+
+    $on($("#share"), "click", () => {
+      const txt = `I have achieved ${getValueFromCache("score", 0)} points in Space War, how many can you achieve?`;
+      shareAction(
+        "Space War",
+        txt,
+        location.href,
+        `<h2>Share</h2><p>${txt}</p><div ${inlineStyles({width : "85%", "margin-top" : "15px", "line-height" : 1.5})}><ul><li>${generateLink('Share in Twitter', `https://twitter.com/intent/tweet?text=${escape(`${txt} ${location.href}`)}`)}<ul><li>${generateLink('Share in Facebook', `https://www.facebook.com/sharer/sharer.php?u=${location.href}&quote=${escape(txt)}`)}<ul></div>`
+      );
+    });
 
     $on($("#game"), "click", () => Screen("Game"));
     $on($("#about"), "click", (e) => {
@@ -621,10 +682,13 @@
       border-bottom: 0;
       background : ${COLORS[v][2]};
       transform: translateY(4px);
+    }`).join("")}
+    ${["down", 'up'].map(v => `
+    @keyframes ${v} {
+      from { transform: translate3d(0, ${v === "down" ? "-100" : "100"}vh, 0); visibility: visible; }
+      to { transform: translate3d(0, 0, 0); }
     }
-  `
-    )
-    .join("")}`;
+    `).join("")}`;
 
   const style = document.createElement("style");
   setHtml(style, customClass);
@@ -641,4 +705,6 @@
   $on(document, "contextmenu", (event) => event.preventDefault());
   $on(window, "resize", onWindowResize);
   onWindowResize();
+  console.log("%cGame developed by Jorge Rubiano.", "color:red; font-size:20px; font-weight: bold; -webkit-text-stroke: 1px black; border-radius:10px; padding: 20px; background-color: black;"
+  );
 })();
